@@ -9,3 +9,5 @@ Why using getters and setters instead of simply using `public` fields?
 	* Lazy loading.
 * Easy to mock, serialize, or do reflection.
 * Allow different access level. `get` could be `public`, but the `set` are `protected`.
+
+*Note: You can set the fields to be public if the class is immutable, like `case class` in scala*
