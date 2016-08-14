@@ -25,7 +25,7 @@
 	* `fmap (f . g) = fmap f . fmap g`
 * **Applicative Functors** is beefed up functors. First, you can do `fmap (*) (Just 3)`, what you get is `Just ((*) 3)`. So basically we get a function wrapped in a `Just`. What we want to do is mapping the function inside of a functor over another functor. This cannot be achieved by using `fmap` in functors. What we need is `Applicative`, which has two methods, `pure` and `<*>`:
 	
-	```
+	```haskell
 	class (Functor f) => Applicative f where
 		pure :: a -> f a
 		(<*>) :: f (a -> b) -> f a -> f b
@@ -35,4 +35,13 @@ The `<*>` function takes a functor that has a function in it and another functor
 * List comprehensions are just syntactic sugar for using lists as monads.
 * List packages `stack exec ghc-pkg list`
 * In Haskell, `where` is more common than `let`, because using `where` allows the programmer to get right to the point in defining what a function does, instead of setting up lots of local variables first.
+* Parametric polymorphism. When you write a polymorphic function, it must work for every possible input type. 
+
+	```haskell
+	notEmpty :: [a] -> Bool
+	notEmpty (_:_) = True
+	notEmpty _     = False
+	```
+	The `notEmpty` function does not care what `a` is. This is what the parametric polymorphism means. One benefit is something called *type erasure*. Because a running Haskell program can never make decisions based on type information, all the type information can be dropped during compilation. This property gives Haskell a huge speed boost when compared to other languages, such as Python, that need to keep types around at runtime.
+*	*Partial function* `head` is what is known as a *partial function*. It is not defined for an empty list. Functions which have certain inputs that will make them recurse infinitely are also called partial. Functions which are well-defined on all possible inputs are known as *total functions*. Avoiding partial functions is good practice in any programming language.
 
