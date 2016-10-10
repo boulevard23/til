@@ -14,31 +14,32 @@ The keyword `let` is used in three ways in Haskell
 		let variable = expression
 		statements
 	```
+
 3. Used inside of list comprehensions without `in`
 
 	```haskell
 	[(x, y) | x <- [1..3], let y =  2 * x]
 	```
 
-You can use `let` with `in` inside of do-notation, but the indentation rules makes it kinda hard, so never use `in` in a list comprehension or a do-block.
+	You can use `let` with `in` inside of do-notation, but the indentation rules makes it kinda hard, so never use `in` in a list comprehension or a do-block.
 
-```haskell
-do let x = 42 in
-     foo
-```
+	```haskell
+	do let x = 42 in
+	   foo
+	```
 
-gets parsed as
+	gets parsed as
 
-```haskell
-do (let x = 42 in foo)
-```
+	```haskell
+	do (let x = 42 in foo)
+	```
 
-Without indentation, you get a parse error:
+	Without indentation, you get a parse error:
 
-```haskell
-do (let x = 42 in)
-   foo
-```
+	```haskell
+	do (let x = 42 in)
+	   foo
+	```
 
 
 

@@ -1,4 +1,15 @@
+# What is Haskell
+## Functional
+* Functions are first-class. Functions are values can be used.
+* Models computations as evaluating expression rather than executing instructions.
+## Pure
+* Expressions are always referential transparent.
+## Lazy
+* Expressions are evaluated until their results are actually needed.
+## Statically Typed
+* Type errors will not compile
 # Basic
+* Variables are all immutable.
 * Functions are called by writing the function name, a space and then the parameters. `succ 8`
 * Infix function can use backticks: ```92 `div` 10```
 * Functions in Haskell don't have to be in any particular order. You don't have to define a function first before using it.
