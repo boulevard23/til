@@ -335,6 +335,7 @@ f . g = \x -> f (g x)
 	
 	`*` means that type is a concrete type.
 
+
 # I/O
 
 * No side-effect is actually impossible. What Haskell does is separate the pure part and the impure part. The benefit is that we can still reason about the pure part.
@@ -387,44 +388,116 @@ f . g = \x -> f (g x)
 	class Functor f where
 		fmap :: (a -> b) -> f a -> f b
 	```
+	
+	`f` here is a functor, not a function.
 
-	* `fmap`It takes a function from one type to another and a functor applied with one type and returns a functor applied with another type.
+	* `fmap` takes a function from one type to another and a functor applied with one type and returns a functor applied with another type.
 	* `f` is not a concrete type, but a type constructor that takes one type paramter.
 
 * `map` is just a `fmap` that works only on lists.
-		
-====
 
-
-* You will get `Int :: *` if you type `:k Int`. `:k` examine the kind of a type, `*` means that the type is a concrete type.
-* **A concrete type** is a type that doesn't take any type parameters and values can only have types that are concrete types.
-* `return` in Haskell is nothing like the `return` in most other languages. In Haskell (in I/O actions specifically), it makes an I/O action out of a pure value. Like taking a value an wraps it up in a box. It is the opposite of `<-`. `a <- return "HAHAHA"` gives you `"HAHAHA"`.
-* I/O actions are values much like any other value in Haskell. We can pass them as parameters to functions and function s can return I/O actions as results. What's special about them is that if they fall into the `main` function, they are performed. So think of functions like `putStrLn` as a function that takes a string and returns an I/O action.
-* Pure functions are lazy by default, which means that we don't know when they will be evaluated and  it really shouldn't matter. However, once pure functions start throwing exceptions, it matters when they are evaluated. That's why we can only catch exceptions thrown from pure functions in the I/O part of our code. Since we want to keep the I/O part as small as possible, the solution is taking advantage of Haskell's powerful type system and use types like `Either` and `Maybe` to represent results that may have failed.
-* **Functors** are things that can be mapped over. In Haskell, they're described by the typeclass `Functor`, which has only one typeclass method `fmap`
-* If a type constructor takes two parameters, like `Either`, we have to partially apply the type constructor until it only takes one type parameter.
-* Functor laws:
+* Typeclasses define behaviors, and we know a lot about a function just by knowing its type declaration. Functor is also defined as typeclass, since it describes things that can be mapped over, which is very abstract and general.
+* A more precise term for what a functor is would be **computational context**. The box analogy is just to help understand. You will get different results depending on the context. `Maybe` defines two related contexts: `Nothing` and `Just a`. Functors, Applicatives, Monads, Arrows etc are all based on the context.
+* `fmap :: (a -> b) -> f a -> f b` can be think of `fmap :: (a -> b) -> (f a -> f b)`. It takes an `a -> b` function and returns a function `f a -> f b`. This is called **lifting** a function. So `fmap` is a function that takes a function and lifts that function so that it operates on functors.
+* **Functor laws**: all functors are expected to have the following properties and behaviors
 	* `fmap id = id`
 	* `fmap (f . g) = fmap f . fmap g`
-* **Applicative Functors** is beefed up functors. First, you can do `fmap (*) (Just 3)`, what you get is `Just ((*) 3)`. So basically we get a function wrapped in a `Just`. What we want to do is mapping the function inside of a functor over another functor. This cannot be achieved by using `fmap` in functors. What we need is `Applicative`, which has two methods, `pure` and `<*>`:
+* Lists are Functors:
 	
+	```haskell
+	instance Functor [] where
+		fmap = map
+	```
+	
+  And also you can apply a function to another
+  function, you're just doing function composition. 
+  So functions are Functors too:
+  
+  ```haskell
+  instance Functor [] where
+      fmap f g = f . g
+  ```
+	
+* **Applicative Functors** When mapping multi-param functions over functors, we get functors that contain functions inside them. E.g `fmap (*) (Just 3)` gives you `Just (* 3)`. This is when applicative functors come to rescue.
+
 	```haskell
 	class (Functor f) => Applicative f where
 		pure :: a -> f a
 		(<*>) :: f (a -> b) -> f a -> f b
 	```
-The class constraint says that an `Applicative` must first be a `Functor`, which means we can use `fmap` on it.
-The `<*>` function takes a functor that has a function in it and another functor and sort of extracts that function from the first functor and then maps it over the second one.
-* List comprehensions are just syntactic sugar for using lists as monads.
-* List packages `stack exec ghc-pkg list`
-* In Haskell, `where` is more common than `let`, because using `where` allows the programmer to get right to the point in defining what a function does, instead of setting up lots of local variables first.
-* Parametric polymorphism. When you write a polymorphic function, it must work for every possible input type. 
+	
+	* `Applicative` must be a `Functor` first.
+	* `pure` takes a value and wrap it into an applicative functor.
+	* `(<*>)` is similar to `fmap`. It takes a functor that has a function in it and another functor, then it extracts the function from the first functor and apply it to the second functor.
+	* Actually `pure f <*> x` equals `fmap f x`. There is a handy function in `Control.Applicative` exports a function called `<$>`, which is just `fmap` as an infix operator. It is defined as:
+	
+		```haskell
+		(<$>) :: (Functor f) => (a -> b) -> f a -> f b
+		f <$> x = fmap f x
+		```
+		
+		Example:
+		
+		```haskell
+		ghci > (++) <$> Just "Hello" <*> Just "World"
+		Just "HelloWorld"
+		```
+
+# Monoid
+
+* A monoid is when you have an associative binary function and a value which acts as an identity with respect to that function. `1` is the identity with respect to `*` and `[]` is the identity with respect to `++`.
+* Monoid type class definition:
+
+  ```haskell
+  class Monoid m where
+      mempty :: m
+      mappend :: m -> m -> m
+      mconcat :: [m] -> m
+      mconcat =  foldr mappend mempty
+  ```
+
+  `mempty` is not a polymorphic constant, kind of like `minBound` from `Bounded`. It represents the identity value for a particular monoid.
+  `mappend` is kinda misleading, it actually is a binary function that takes two monoid values and returns a third. It has nothing to do with the append.
+  `mconcat` takes a list of monoid values and reduces them to a single value by doing `mappend` between the list's elements.
+
+* Monoid laws:
+	* ```mempty `mappend` x = x```
+	* ```x `mappend` mempty = x```
+	* ```(x `mappend` y) `mappend` z = x `mappend` (y `mappend` z)```
+
+# Monad
+	
+* Monad type class:
 
 	```haskell
-	notEmpty :: [a] -> Bool
-	notEmpty (_:_) = True
-	notEmpty _     = False
+	class Monad m where
+		return :: a -> m a
+		
+		(>>=) :: m a -> (a -> m b) -> m b
+		
+		(>>) :: m a -> m b -> m b
+		x >> y = x >>= \_ -> y
+		
+		fail :: String -> m a
+		fail msg = error msg
 	```
-	The `notEmpty` function does not care what `a` is. This is what the parametric polymorphism means. One benefit is something called *type erasure*. Because a running Haskell program can never make decisions based on type information, all the type information can be dropped during compilation. This property gives Haskell a huge speed boost when compared to other languages, such as Python, that need to keep types around at runtime.
-*	*Partial function* `head` is what is known as a *partial function*. It is not defined for an empty list. Functions which have certain inputs that will make them recurse infinitely are also called partial. Functions which are well-defined on all possible inputs are known as *total functions*. Avoiding partial functions is good practice in any programming language.
+	
+	There is no class constraint like `class (Applicative m) => Monad m where` because when Haskell was made, people didn't think applicative functors are a good fit for Haskell, so they weren't in there. But Monad is assured an applicative functor that support bind function: `>>=`.
+	
+	* `return` is the same as `pure`. It takes a value and puts it in a minimal default context.
+	* `>>=` is the bind function. It takes a monadic value (that is, a value with a context), and feeds it to a function that takes a normal value but returns a monadic value.
+	* `>>` comes with a default implementation. It allows you to pass some value to a function that ignores its parameter and always just returns some predetermined value.
+	* `fail` is used by Haskell to enable failure in a special syntactic construct for monads.
+
+* Monads in Haskell are so useful that they got a special syntax sugar called `do` notation. The `fail` function is called when the all the pattern matching failed in the `do` block.
+* List comprehensions are just syntactic sugar for using lists as monads.
+* Monad laws:
+	* Left identity: `return x >>= f` equals `f x`
+	* Right identity: `m >>= return` equals `m`
+	* Associativity: `(m >>= f) >>= g` equals `m >>= (\x -> f x >>= g`
+* Monads are great at side effects:
+	* Writer monad: return a value and a log.
+	* Reader monad: lets you pass a value to all your functions behind the scenes.
+	* State monad: exactly like the Reader monad, except you can write as well as read.
+
 
