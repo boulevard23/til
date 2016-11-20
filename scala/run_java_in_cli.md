@@ -1,4 +1,4 @@
-# Run Java In CLI
+# Run Java in CLI
 
 * Syntax: 
 	
